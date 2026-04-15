@@ -498,7 +498,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 /* ── TRUST / PARALLAX ───────────────────────────── */
 
-.trust-wrap { height: 250vh; position: relative; }
+.trust-wrap { height: 140vh; position: relative; }
 .trust-sticky {
   position: sticky;
   top: 0;
@@ -2089,11 +2089,13 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .gallery-head {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   margin-bottom: 3rem;
+  gap: 1.5rem;
 }
-.igc-controls { display: flex; gap: 0.8rem; }
+.igc-controls { display: flex; gap: 0.8rem; justify-content: center; }
 .igc-btn {
   width: 44px; height: 44px;
   border-radius: 50%;

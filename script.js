@@ -538,35 +538,38 @@ function initScrollStack() {
   if (!cards.length || !stage) return;
 
   const n = cards.length;
-  const OFFSCREEN = 520;
+  const OFFSCREEN = 480;
+  const AW = (1 / n) * 0.8; // animation window per card
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
   function update() {
-    const rect   = container.getBoundingClientRect();
-    const scrollH = Math.max(1, container.offsetHeight - stage.offsetHeight);
-    const scrolled = -rect.top;
-    const progress = Math.max(0, Math.min(1, scrolled / scrollH));
-    const rawIdx  = progress * n;
-    const curIdx  = Math.min(n - 1, Math.floor(rawIdx));
-    const subP    = rawIdx - Math.floor(rawIdx);
+    const top    = container.getBoundingClientRect().top;
+    const totalH = Math.max(1, container.offsetHeight - window.innerHeight);
+    const p      = clamp(-top / totalH, 0, 1);
 
     cards.forEach((card, i) => {
-      let ty, scale, blur, opacity;
+      // Card 0 is pre-arrived (arriveAt < 0) so it's fully visible at p=0
+      const arriveAt = i === 0 ? -AW : (i / n) - AW * 0.5;
+      const ep = clamp((p - arriveAt) / AW, 0, 1);
 
-      if (i > curIdx) {
-        const dist = i - curIdx;
-        ty      = OFFSCREEN + dist * 40;
-        scale   = 0.94;
-        blur    = 0;
-        opacity = 0;
-      } else if (i === curIdx) {
-        const ep = Math.min(1, subP * 2.5);
+      // Count later cards that have started arriving
+      let depth = 0;
+      for (let j = i + 1; j < n; j++) {
+        const jArriveAt = (j / n) - AW * 0.5;
+        if (clamp((p - jArriveAt) / AW, 0, 1) > 0.1) depth++;
+      }
+
+      let ty, scale, blur, opacity;
+      if (ep < 0.01) {
+        ty = OFFSCREEN; scale = 0.94; blur = 0; opacity = 0;
+      } else if (depth === 0) {
         ty      = OFFSCREEN * (1 - ep);
         scale   = 0.92 + 0.08 * ep;
         blur    = 0;
         opacity = ep;
       } else {
-        const depth = curIdx - i;
-        ty      = -depth * 14;
+        ty      = -(depth * 14);
         scale   = Math.max(0.8, 1 - depth * 0.05);
         blur    = Math.min(6, depth * 1.8);
         opacity = Math.max(0.45, 1 - depth * 0.15);
