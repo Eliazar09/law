@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollProgress();
   initMagneticButtons();
   initSectionLines();
+  initScrollStack();
+  initNavActive();
+  initInsightsCarousel();
 });
 
 /* ── HERO LOAD ANIMATION ──────────────────────────────── */
@@ -524,6 +527,109 @@ function initMobileNav() {
   mobileNav?.querySelectorAll('.m-link').forEach(link => {
     link.addEventListener('click', close);
   });
+}
+
+/* ── SCROLL STACK (Core Values) ───────────────────────── */
+function initScrollStack() {
+  const container = document.getElementById('vstackContainer');
+  if (!container) return;
+  const stage = container.querySelector('.vstk-stage');
+  const cards = Array.from(container.querySelectorAll('.vstk-card'));
+  if (!cards.length || !stage) return;
+
+  const n = cards.length;
+  const OFFSCREEN = 520;
+
+  function update() {
+    const rect   = container.getBoundingClientRect();
+    const scrollH = Math.max(1, container.offsetHeight - stage.offsetHeight);
+    const scrolled = -rect.top;
+    const progress = Math.max(0, Math.min(1, scrolled / scrollH));
+    const rawIdx  = progress * n;
+    const curIdx  = Math.min(n - 1, Math.floor(rawIdx));
+    const subP    = rawIdx - Math.floor(rawIdx);
+
+    cards.forEach((card, i) => {
+      let ty, scale, blur, opacity;
+
+      if (i > curIdx) {
+        const dist = i - curIdx;
+        ty      = OFFSCREEN + dist * 40;
+        scale   = 0.94;
+        blur    = 0;
+        opacity = 0;
+      } else if (i === curIdx) {
+        const ep = Math.min(1, subP * 2.5);
+        ty      = OFFSCREEN * (1 - ep);
+        scale   = 0.92 + 0.08 * ep;
+        blur    = 0;
+        opacity = ep;
+      } else {
+        const depth = curIdx - i;
+        ty      = -depth * 14;
+        scale   = Math.max(0.8, 1 - depth * 0.05);
+        blur    = Math.min(6, depth * 1.8);
+        opacity = Math.max(0.45, 1 - depth * 0.15);
+      }
+
+      card.style.transform = `translateY(calc(-50% + ${ty.toFixed(1)}px)) scale(${scale.toFixed(3)})`;
+      card.style.filter    = blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : '';
+      card.style.opacity   = opacity.toFixed(3);
+      card.style.zIndex    = i + 1;
+    });
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}
+
+/* ── NAV ACTIVE SECTION TRACKING ───────────────────── */
+function initNavActive() {
+  const links = document.querySelectorAll('#navLinks .nav-link');
+  const sections = document.querySelectorAll('section[id]');
+  if (!links.length || !sections.length) return;
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const match = document.querySelector(`#navLinks .nav-link[href="#${e.target.id}"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+
+  sections.forEach(s => obs.observe(s));
+}
+
+/* ── GALLERY CASE STUDIES CAROUSEL ────────────────── */
+function initInsightsCarousel() {
+  const track = document.getElementById('igcTrack');
+  const prev  = document.getElementById('igcPrev');
+  const next  = document.getElementById('igcNext');
+  if (!track) return;
+
+  const cards = Array.from(track.querySelectorAll('.igc-card'));
+  let idx = 0;
+
+  function getVisible() {
+    return window.innerWidth >= 900 ? 3 : window.innerWidth >= 600 ? 2 : 1;
+  }
+
+  function go(dir) {
+    const visible = getVisible();
+    const max = Math.max(0, cards.length - visible);
+    idx = Math.max(0, Math.min(max, idx + dir));
+    const offset = idx > 0 && cards[idx] ? cards[idx].offsetLeft : 0;
+    track.style.transform = `translateX(-${offset}px)`;
+    if (prev) prev.disabled = idx === 0;
+    if (next) next.disabled = idx >= max;
+  }
+
+  prev?.addEventListener('click', () => go(-1));
+  next?.addEventListener('click', () => go(1));
+  window.addEventListener('resize', () => go(0), { passive: true });
+  go(0);
 }
 
 /* ── NAV SLIDER PILL ─────────────────────────────────── */
